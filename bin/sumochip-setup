@@ -85,3 +85,65 @@ echo "Web interface service installed and started"
 
 IPv4=$(ip addr show wlan0 | grep "inet " | xargs | cut -d ' ' -f 2 | cut -d "/" -f 1)
 echo "In a web browser open http://$HOSTNAME or http://$IPv4"
+
+if [ -x /usr/sbin/hostapd ]; then
+  sudo apt-get install dnsmasq
+fi
+
+cat > /etc/network/interfaces << ASDF
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# WAN liides saab IP-aadressi DHCP-ga
+auto eth0
+iface eth0 inet dhcp
+
+# LAN on meie sisemine võrk
+auto eth1
+iface eth1 inet static
+        address 192.168.55.1
+        netmask 255.255.255.0
+
+ASDF
+
+service hostapd restart
+
+echo "dnsmasq configured and restarted"
+
+if [ -x /usr/sbin/hostapd ]; then
+  sed -i -r 's/#?DAEMON_CONF=".*"/DAEMON_CONF="\/etc\/hostapd\/hostapd.conf"/g' /etc/default/hostapd
+fi
+
+# Kuulame võrguliidesel wlan0
+# Kasutame nl80211 liidest tuumaga suhtlemisel
+# Võrgunimi
+# Kuulame kanalil 6 ehk 2.437 GHz
+# Kasutame WPA2 krüptot
+
+cat > /etc/default/hostapd <<ASDF
+# Kuulame võrguliidesel wlan0
+interface=wlan0
+
+# Kasutame nl80211 liidest tuumaga suhtlemisel
+driver=nl80211
+
+# Võrgunimi
+ssid=lauri-hackerspace
+
+# Kuulame kanalil 6 ehk 2.437 GHz
+channel=6
+
+# Kasutame WPA2 krüptot
+wpa=2
+wpa_passphrase=salakala
+
+
+ASDF
+
+service hostapd restart
+
+echo "hostapd configured and restarted"
