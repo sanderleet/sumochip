@@ -86,7 +86,9 @@ echo "Web interface service installed and started"
 IPv4=$(ip addr show wlan0 | grep "inet " | xargs | cut -d ' ' -f 2 | cut -d "/" -f 1)
 echo "In a web browser open http://$HOSTNAME or http://$IPv4"
 
-if [ -x /usr/sbin/hostapd ]; then
+
+
+if [ -x /usr/sbin/dnsmasq ]; then
   sudo apt-get install dnsmasq
 fi
 
@@ -110,7 +112,39 @@ iface eth1 inet static
 
 ASDF
 
-service hostapd restart
+sudo service networking restart
+
+
+cat > /etc/dnsmasq.d/lan << ASDF
+
+# Kuula nimeserveri p2ringuid pordil 53
+port=53
+
+# T2psusta domeeninimi, et masinad oleks masinanimi.lan kujul ka kättesaadavad
+domain=lan
+
+# K2ita rakendust privilegeerimata kasutajana
+# minimeerimaks turvariske
+user=nobody
+group=nogroup
+
+# Seo DHCP server LAN võrguliidesega
+interface=eth1
+
+# Serveeri LAN liidesel IP vahemikku 192.168.55.50-150 kuni 12 tunniks
+dhcp-range=192.168.55.50,192.168.55.150,12h
+
+# T2psusta LAN luusi aadress, vaikimisi sama mis DHCP serveri aadress
+#dhcp-option=option:router,192.168.55.20
+
+# T2psusta LAN nimeserverid, vaikimisi sama mis DHCP serveri aadress
+#dhcp-option=option:dns-server,8.8.8.8,8.8.4.4
+
+# M22ra WAN v6rgu nimeserver
+server=194.126.115.18
+ASDF
+
+sudo service dnsmasq restart
 
 echo "dnsmasq configured and restarted"
 
